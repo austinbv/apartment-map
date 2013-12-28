@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta name="viewport" content="initial-scale=1.0, user-scalable=no">
+  <meta charset="utf-8">
+  <title>KML Layers</title>
+  <style>
+    html, body, #map-canvas {
+      height: 100%;
+      margin: 0px;
+      padding: 0px
+    }
+  </style>
+  <script src="http://code.jquery.com/jquery-1.10.1.min.js"></script>
+  <script src="https://maps.googleapis.com/maps/api/js?v=3.exp&sensor=false"></script>
+  <script src="https://rawgithub.com/jsoma/tabletop/master/src/tabletop.js"></script>
+  <script>
+
+    function initialize() {
+      var	geocoder = new google.maps.Geocoder();
+      var chicago = new google.maps.LatLng(41.875696,-87.624207);
+      var mapOptions = {
+        zoom: 11,
+        center: chicago
+      }
+
+      var map = new google.maps.Map(document.getElementById('map-canvas'), mapOptions);
+
+      var neighborhoodLayer = new google.maps.KmlLayer({
+        url: 'http://chicagomap.zolk.com/sources/neighborhoods/source.kml'
+      });
+      neighborhoodLayer.setMap(map);
+
+      Tabletop.init({ key: '0AkRtEnzDrd36dDNvU3Z1NGU3NDRad3EzSFVfOU96b0E', callback: addProperties } )
+
+      function addProperties(data, tabletop) {
+        var data = data.Sheet1.elements
+        data.forEach(function(property) {
+          console.log(property)
+          geocoder.geocode({address: property.address}, function(results, status) {
+            if (status == google.maps.GeocoderStatus.OK) {
+              console.log("adding: ", results[0].geometry.location)
+              var marker = new google.maps.Marker({
+                map: map,
+                position: results[0].geometry.location,
+                title: property.address
+              });
+            } else {
+              alert('Geocode was not successful for the following reason: ' + status);
+            }
+
+            var infowindow = new google.maps.InfoWindow({
+              content: '<div id="content">' +
+                '<h1 id="firstHeading" class="firstHeading">' + property.address + '</h1>' +
+                '<div id="bodyContent">' +
+                '<ul style="list-style: none">' +
+                '<li><b>Price: </b>' + property.price +'</li>' +
+                '<li><b>MLS ID: </b>' + property.mls +'</li>' +
+                '<li><b>Stat: </b>' + property.stat +'</li>' +
+                '</ul>' +
+                '</div>' +
+                '</div>'
+            });
+
+            google.maps.event.addListener(marker, 'click', function() {
+              infowindow.open(map,marker);
+            });
+
+          })
+          throw "stop"
+        })
+      }
+    }
+
+    google.maps.event.addDomListener(window, 'load', initialize);
+
+  </script>
+</head>
+<body>
+<div id="map-canvas"></div>
+</body>
+</html>
