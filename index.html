@@ -49,10 +49,11 @@
       }
     }
 
-    function setupMarker(results, map, property, color) {
+    function setupMarker(map, property, color) {
+      console.log(property)
       var marker = new google.maps.Marker({
         map: map,
-        position: results[0].geometry.location,
+        position: property.geoloc,
         title: property.address
       });
 
@@ -71,7 +72,9 @@
     function setUpMarkerWithAddress(geocoder, property, map, color) {
       geocoder.geocode({address: property.address}, function(results, status) {
         if (status == google.maps.GeocoderStatus.OK) {
-          setupMarker(results, map, property, color);
+          property.geoloc = results[0].geometry.location
+          localStorage.setItem(property.mls, JSON.stringify(property))
+          setupMarker(map, property, color);
         } else {
           console.error('Geocode was not successful for the following reason: ' + status);
         }
@@ -84,13 +87,18 @@
       addNeighborhoodLayer(map);
 
       Tabletop.init({ key: '0AkRtEnzDrd36dDNvU3Z1NGU3NDRad3EzSFVfOU96b0E', callback: addProperties })
-      setUpMarkerWithAddress(geocoder, {address: "222 W Merchandise Mart Plaza #1212, Chicago, IL 60654"}, map, true)
+      setUpMarkerWithAddress(geocoder, {address: "222 W Merchandise Mart Plaza #1212, Chicago, IL 60654", mls: 'office'}, map, true)
       function addProperties(data, tabletop) {
         var data = data.Sheet1.elements
         data.forEach(function(property) {
-          setTimeout(function() {
+          var savedProperty = JSON.parse(localStorage.getItem(property.mls))
+
+          if (savedProperty) {
+            savedProperty.geoloc = new google.maps.LatLng(savedProperty.geoloc.nb, savedProperty.geoloc.ob)
+            setupMarker(map, savedProperty)
+          } else {
             setUpMarkerWithAddress(geocoder, property, map);
-          }, Math.floor(Math.random() * 10000));
+          }
         })
       }
     }
