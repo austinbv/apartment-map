@@ -30,16 +30,6 @@
       neighborhoodLayer.setMap(map);
     }
 
-    function addMarker(results, map, property) {
-      console.log("adding: ", results[0].geometry.location)
-      var marker = new google.maps.Marker({
-        map: map,
-        position: results[0].geometry.location,
-        title: property.address
-      });
-      return marker;
-    }
-
     function buildInfoText(property) {
       return '<div id="content">' +
         '<h1 id="firstHeading" class="firstHeading">' + property.address + '</h1>' +
@@ -53,37 +43,54 @@
         '</div>';
     }
 
-    function geocodeAddress(geocoder, property, map) {
+    function handleGeoCode(callback) {
+      return function(results, stats) {
+
+      }
+    }
+
+    function setupMarker(results, map, property, color) {
+      var marker = new google.maps.Marker({
+        map: map,
+        position: results[0].geometry.location,
+        title: property.address
+      });
+
+      if (color) {
+        var iconFile = 'http://maps.google.com/mapfiles/ms/icons/green-dot.png';
+        marker.setIcon(iconFile)
+      }
+
+      google.maps.event.addListener(marker, 'click', function() {
+        new google.maps.InfoWindow({
+          content: buildInfoText(property)
+        }).open(map, marker);
+      });
+    }
+
+    function setUpMarkerWithAddress(geocoder, property, map, color) {
       geocoder.geocode({address: property.address}, function(results, status) {
         if (status == google.maps.GeocoderStatus.OK) {
-          var marker = addMarker(results, map, property);
+          setupMarker(results, map, property, color);
         } else {
-          alert('Geocode was not successful for the following reason: ' + status);
+          console.error('Geocode was not successful for the following reason: ' + status);
         }
-
-        var infowindow = new google.maps.InfoWindow({
-          content: buildInfoText(property)
-        });
-
-        google.maps.event.addListener(marker, 'click', function() {
-          infowindow.open(map, marker);
-        });
-
-      })
+      });
     }
+
     function initialize() {
       var map = createMap('map-canvas')
       var geocoder = new google.maps.Geocoder();
       addNeighborhoodLayer(map);
 
       Tabletop.init({ key: '0AkRtEnzDrd36dDNvU3Z1NGU3NDRad3EzSFVfOU96b0E', callback: addProperties })
-
+      setUpMarkerWithAddress(geocoder, {address: "222 W Merchandise Mart Plaza #1212, Chicago, IL 60654"}, map, true)
       function addProperties(data, tabletop) {
         var data = data.Sheet1.elements
         data.forEach(function(property) {
-          console.log(property)
-          geocodeAddress(geocoder, property, map);
-          throw "stop"
+          setTimeout(function() {
+            setUpMarkerWithAddress(geocoder, property, map);
+          }, Math.floor(Math.random() * 10000));
         })
       }
     }
